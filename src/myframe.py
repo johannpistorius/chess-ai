@@ -54,11 +54,11 @@ class MyFrame(tk.Frame):
                                     tags="piece " + piece.square.file + piece.square.rank)
 
     def refresh(self, turn):
+        print("refresh")
         self.canvas.delete("select")
         self.canvas.delete("hold")
         self.canvas.delete("piece")
-        for piece in self.board.pieces:
-            self.place_piece(piece)
+        self.init_board()
 
     def configure(self, event):
         xsize = int((event.width - 1) / self.columns)
@@ -91,24 +91,26 @@ class MyFrame(tk.Frame):
         if square is not None and square.piece is not None and square.piece.color is self.turn and \
                 (self.board.player.color is self.turn and self.board.player.ishuman or
                  self.board.opponent.color is self.turn and self.board.opponent.ishuman):
-            self.piece_hold = self.board.find_piece(rank, file)
+            self.piece_hold = self.board.get_piece_on_square(rank, file)
             x1 = (int(col) * self.size)
             y1 = (int(row) * self.size)
             x2 = x1 + self.size
             y2 = y1 + self.size
             self.canvas.create_rectangle(x1, y1, x2, y2, outline="yellow", fill="", tags="select")
-            for i in square.piece.available_moves(self.board.squares):
-                col = self.board.convert_file_to_col(i[0])
-                row = self.board.convert_rank_to_row(i[1])
-                x1 = (int(col) * self.size)
-                y1 = (int(row) * self.size)
-                x2 = x1 + self.size
-                y2 = y1 + self.size
-                square = self.board.find_square(i[0], i[1])
-                if square.piece is None:
-                    self.canvas.create_rectangle(x1, y1, x2, y2, outline="yellow", fill="green", tags="select")
-                else:
-                    self.canvas.create_rectangle(x1, y1, x2, y2, outline="yellow", fill="red", tags="select")
+            for key, values in self.board.current_available_moves.items():
+                if key is square.piece:
+                    for value in values:
+                        col = self.board.convert_file_to_col(value[0])
+                        row = self.board.convert_rank_to_row(value[1])
+                        x1 = (int(col) * self.size)
+                        y1 = (int(row) * self.size)
+                        x2 = x1 + self.size
+                        y2 = y1 + self.size
+                        square = self.board.find_square(value[0], value[1])
+                        if square.piece is None:
+                            self.canvas.create_rectangle(x1, y1, x2, y2, outline="yellow", fill="green", tags="select")
+                        else:
+                            self.canvas.create_rectangle(x1, y1, x2, y2, outline="yellow", fill="red", tags="select")
 
     def hold(self, event):
         self.canvas.delete("hold")
@@ -140,9 +142,11 @@ class MyFrame(tk.Frame):
         rank = self.board.convert_row_to_rank(row)
         square = self.board.find_square(file, rank)
         if self.piece_hold is not None:
-            for i in self.piece_hold.available_moves(self.board.squares):
-                if i[0] == file and i[1] == rank:
-                    self.board.place_piece(self.piece_hold, square)
-                    self.canvas.delete("select")
-                    self.board.turn = not self.board.turn
+            for key, values in self.board.current_available_moves.items():
+                if key is self.piece_hold:
+                    for value in values:
+                        if value[0] == file and value[1] == rank:
+                            self.board.place_piece(self.piece_hold, square)
+                            self.canvas.delete("select")
+                            self.board.turn = not self.board.turn
         self.piece_hold = None

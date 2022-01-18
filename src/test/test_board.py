@@ -94,12 +94,12 @@ Test finding pieces
 
 
 def test_find_piece():
-    ret_value = board.find_piece(rank="1", file="a")
+    ret_value = board.get_piece_on_square(rank="1", file="a")
     assert ret_value is not None
 
 
 def test_find_none_piece():
-    ret_value = board.find_piece(rank="3", file="c")
+    ret_value = board.get_piece_on_square(rank="3", file="c")
     assert ret_value is None
 
 
@@ -109,7 +109,7 @@ Test removing pieces
 
 
 def test_remove_piece():
-    piece = board.find_piece(rank="1", file="a")
+    piece = board.get_piece_on_square(rank="1", file="a")
     board.remove_piece(piece)
-    ret_value = board.find_piece(rank="1", file="a")
+    ret_value = board.get_piece_on_square(rank="1", file="a")
     assert ret_value is None

@@ -1,6 +1,6 @@
 class Piece:
     def __init__(self, color, square=None):
-        #self.san = ""
+        # self.san = ""
         self.color = color
         self.square = square
         if square is not None:
@@ -13,8 +13,8 @@ class Piece:
 
     def find_square(self, rank, file, squares):
         for square in squares:
-           if square.rank == rank and square.file == file:
-               return square
+            if square.rank == rank and square.file == file:
+                return square
         return None
 
     def check_line(self, rank, file, rank_direction, file_direction, squares):
