@@ -54,7 +54,7 @@ class MyFrame(tk.Frame):
                                     tags="piece " + piece.square.file + piece.square.rank)
 
     def refresh(self, turn):
-        print("refresh")
+        #print("refresh")
         self.canvas.delete("select")
         self.canvas.delete("hold")
         self.canvas.delete("piece")

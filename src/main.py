@@ -8,9 +8,8 @@ import threading
 
 
 def build_board(config):
-    player = Player(True, "default_name", True)
-    #opponent = Player(False, "default_name", False)
-    opponent = Player(True, "default_name", False)
+    player = Player(ishuman=True, name="default_name", color=True)
+    opponent = Player(ishuman=False, name="default_name", color=False)
     board = Board(config, player, opponent)
     return board
 

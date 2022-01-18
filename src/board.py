@@ -62,7 +62,12 @@ class Board:
         else:
             self.current_available_moves = self.filter_available_moves(self.all_available_moves_player(player))
         print(f"Moves {self.current_available_moves}")
-        if self.halfmove_clock >= 50:
+        if self._turn:
+            king = self.get_piece('K')
+        else:
+            king = self.get_piece('k')
+        if self.halfmove_clock >= 50 or\
+                (not self.current_available_moves and not self.is_piece_attacked(king.square)):
             print(self.board_to_fen_notation())
             print(str(self))
             sys.exit("Draw!")
@@ -97,10 +102,14 @@ class Board:
             if piece.square.rank == rank and piece.square.file == file:
                 return piece
 
-    def get_piece(self, san):
+    def get_piece(self, san, square=None):
         for piece in self.pieces:
-            if piece.san == san:
-                return piece
+            if square:
+                if piece.san == san and piece.square.rank == square.rank and piece.square.file == square.file:
+                    return piece
+            else:
+                if piece.san == san:
+                    return piece
 
     def find_square(self, file, rank):
         for square in self.squares:
@@ -131,32 +140,34 @@ class Board:
         return available_moves
 
     def filter_available_moves(self, available_moves):
-        # print(f"Before \n {str(available_moves)}")
+        #print(f"Before \n {str(available_moves)}")
         moves = {}
         fen = self.board_to_fen_notation()
-        king = None
-        for piece in self.pieces:
-            if piece.san.lower() == "k" and piece.color is self._turn:
-                king = piece
+        if self._turn:
+            king = self.get_piece('K')
+        else:
+            king = self.get_piece('k')
         for key, values in list(available_moves.items()):
-            #print(f"Key: {str(key)}")
-            #print(f"Values: {str(values)}")
+            print(f"Key: {str(key)}")
+            print(f"Values: {str(values)}")
             for value in values:
-                #print(f"\tIterating over: {str(value)}")
+                print(f"\tIterating over: {str(value)}")
                 board_copy = Board(fen, self.player, self.opponent, persistent_obj=True)
-                #print(f"\tBoard: {str(board_copy.board_to_fen_notation())}")
-                piece_copy = board_copy.get_piece(key.san)
+                print(f"\tBoard: {str(board_copy.board_to_fen_notation())}")
+                print(f"Key {key} {key.square.rank} {key.square.file}")
+                piece_copy = board_copy.get_piece(key.san, key.square)
+                print(f"Key copy {piece_copy} {piece_copy.square.rank} {piece_copy.square.file}")
                 board_copy.place_piece(piece_copy, board_copy.find_square(value[0], value[1]))
                 king_copy = board_copy.get_piece(king.san)
-                #print(f"\tKing: {str(king_copy.square)}")
+                print(f"\tKing: {str(king_copy.square)}")
                 if not board_copy.is_piece_attacked(king_copy.square):
-                    #print(f"\tKing not in check if: {str(key)} to {str(value)}")
+                    print(f"\tKing not in check if: {str(key)} to {str(value)}")
                     if key in moves:
                         moves[key].append(value)
                     else:
                         moves[key] = [value]
-                #else:
-                    #print(f"\tKing still in check if: {str(key)} to {str(value)}")
+                else:
+                    print(f"\tKing still in check if: {str(key)} to {str(value)}")
                 del board_copy
         #print(f"After \n {str(moves)}")
         return moves
