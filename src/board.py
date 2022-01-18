@@ -6,10 +6,12 @@ from knight import Knight
 from rook import Rook
 from square import Square
 
+import sys
 
 class Board:
 
-    def __init__(self, configuration, player, opponent, rows=8, columns=8):
+    def __init__(self, configuration, player, opponent, rows=8, columns=8, persistent_obj=None):
+        sys.setrecursionlimit(1000000)
         self.player = player
         self.opponent = opponent
         self.rows = rows
@@ -25,11 +27,8 @@ class Board:
         self.fullmove_number = 1
         self.halfmove_clock = 0
 
+        self.persistent_obj = persistent_obj
         self.init_board(configuration)
-        if player.color:
-            self.current_available_moves = self.all_available_moves_player(player)
-        else:
-            self.current_available_moves = self.all_available_moves_player(opponent)
 
     @property
     def turn(self):
@@ -37,17 +36,10 @@ class Board:
 
     @turn.setter
     def turn(self, val):
-        initializing = False
-        try:
-            self._turn, initializing = val
+        self._turn = val
+        if not self.persistent_obj:
             player = self.get_player(self._turn)
             self.play(player)
-        except TypeError:
-            self._turn = val
-            player = self.get_player(self._turn)
-        if not initializing:
-            if not self.checkmate(player):
-                self.play(player)
         for callback in self.turn_observers:
             callback(self._turn)
 
@@ -64,6 +56,23 @@ class Board:
 
     def play(self, player):
         # TODO Random AI (not very smort)
+        #print(f"Initializing {(self.fullmove_number == 1)}")
+        if self.fullmove_number == 1:
+            self.current_available_moves = self.all_available_moves_player(player)
+        else:
+            self.current_available_moves = self.filter_available_moves(self.all_available_moves_player(player))
+        print(f"Moves {self.current_available_moves}")
+        if self.halfmove_clock >= 50:
+            print(self.board_to_fen_notation())
+            print(str(self))
+            sys.exit("Draw!")
+        if not self.current_available_moves:
+            print(self.board_to_fen_notation())
+            print(str(self))
+            if self._turn:
+                sys.exit("Black won!")
+            else:
+                sys.exit("White won!")
         if player.color is self._turn and not player.ishuman:
             piece, position = player.choose_move(self.current_available_moves)
             self.place_piece(piece, self.find_square(position[0], position[1]))
@@ -122,7 +131,7 @@ class Board:
         return available_moves
 
     def filter_available_moves(self, available_moves):
-        print(f"Before \n {str(available_moves)}")
+        # print(f"Before \n {str(available_moves)}")
         moves = {}
         fen = self.board_to_fen_notation()
         king = None
@@ -130,26 +139,26 @@ class Board:
             if piece.san.lower() == "k" and piece.color is self._turn:
                 king = piece
         for key, values in list(available_moves.items()):
-            print(f"Key: {str(key)}")
-            print(f"Values: {str(values)}")
+            #print(f"Key: {str(key)}")
+            #print(f"Values: {str(values)}")
             for value in values:
-                print(f"\tIterating over: {str(value)}")
-                board_copy = Board(fen, self.player, self.opponent)
-                print(f"\tBoard: {str(board_copy.board_to_fen_notation())}")
+                #print(f"\tIterating over: {str(value)}")
+                board_copy = Board(fen, self.player, self.opponent, persistent_obj=True)
+                #print(f"\tBoard: {str(board_copy.board_to_fen_notation())}")
                 piece_copy = board_copy.get_piece(key.san)
                 board_copy.place_piece(piece_copy, board_copy.find_square(value[0], value[1]))
                 king_copy = board_copy.get_piece(king.san)
-                print(f"\tKing: {str(king_copy.square)}")
+                #print(f"\tKing: {str(king_copy.square)}")
                 if not board_copy.is_piece_attacked(king_copy.square):
-                    print(f"\tKing not in check if: {str(key)} to {str(value)}")
+                    #print(f"\tKing not in check if: {str(key)} to {str(value)}")
                     if key in moves:
                         moves[key].append(value)
                     else:
                         moves[key] = [value]
-                else:
-                    print(f"\tKing still in check if: {str(key)} to {str(value)}")
+                #else:
+                    #print(f"\tKing still in check if: {str(key)} to {str(value)}")
                 del board_copy
-        print(f"After \n {str(moves)}")
+        #print(f"After \n {str(moves)}")
         return moves
 
     # Special conditions
@@ -234,6 +243,8 @@ class Board:
                     counter = 1
                 else:
                     counter += 1
+        if counter != 0:
+            fen_notation += str(counter)
         # active color
         if self._turn:
             fen_notation += " w"
@@ -249,7 +260,7 @@ class Board:
         fen_notation += " " + str(self.halfmove_clock)
         # Fullmove number
         fen_notation += " " + str(self.fullmove_number)
-        #print(fen_notation)
+        # print(fen_notation)
         return fen_notation
 
     def fen_notation_to_board(self, fen_notation):
@@ -287,9 +298,9 @@ class Board:
         self.halfmove_clock = int(fen_split[4])
         self.fullmove_number = int(fen_split[5])
         if fen_split[1] == "w":
-            self.turn = (True, True)
+            self.turn = True
         else:
-            self.turn = (False, True)
+            self.turn = False
 
     def __str__(self):
         board_text = ""
