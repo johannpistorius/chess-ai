@@ -2,10 +2,12 @@ from piece import Piece
 
 
 class King(Piece):
-    def __init__(self, color, square=None, not_moved=True):
+    def __init__(self, color, square=None, not_moved=True, castling_king_side=True, castling_queen_side=True):
         super().__init__(color, square)
         self.standard_algebraic_notation()
         self.not_moved = not_moved
+        self.castling_king_side = castling_king_side
+        self.castling_queen_side = castling_queen_side
 
     # TODO add castling ability
     def available_moves(self, squares):

@@ -8,8 +8,8 @@ from square import Square
 
 import sys
 
-class Board:
 
+class Board:
     def __init__(self, configuration, player, opponent, rows=8, columns=8, persistent_obj=None):
         sys.setrecursionlimit(1000000)
         self.player = player
@@ -56,17 +56,17 @@ class Board:
 
     def play(self, player):
         # TODO Random AI (not very smort)
-        #print(f"Initializing {(self.fullmove_number == 1)}")
+        # print(f"Initializing {(self.fullmove_number == 1)}")
         if self.fullmove_number == 1:
             self.current_available_moves = self.all_available_moves_player(player)
         else:
             self.current_available_moves = self.filter_available_moves(self.all_available_moves_player(player))
-        print(f"Moves {self.current_available_moves}")
+        #print(f"Moves {self.current_available_moves}")
         if self._turn:
             king = self.get_piece('K')
         else:
             king = self.get_piece('k')
-        if self.halfmove_clock >= 50 or\
+        if self.halfmove_clock >= 50 or \
                 (not self.current_available_moves and not self.is_piece_attacked(king.square)):
             print(self.board_to_fen_notation())
             print(str(self))
@@ -140,7 +140,7 @@ class Board:
         return available_moves
 
     def filter_available_moves(self, available_moves):
-        #print(f"Before \n {str(available_moves)}")
+        # print(f"Before \n {str(available_moves)}")
         moves = {}
         fen = self.board_to_fen_notation()
         if self._turn:
@@ -148,28 +148,28 @@ class Board:
         else:
             king = self.get_piece('k')
         for key, values in list(available_moves.items()):
-            print(f"Key: {str(key)}")
-            print(f"Values: {str(values)}")
+            #print(f"Key: {str(key)}")
+            #print(f"Values: {str(values)}")
             for value in values:
-                print(f"\tIterating over: {str(value)}")
+                #print(f"\tIterating over: {str(value)}")
                 board_copy = Board(fen, self.player, self.opponent, persistent_obj=True)
-                print(f"\tBoard: {str(board_copy.board_to_fen_notation())}")
-                print(f"Key {key} {key.square.rank} {key.square.file}")
+                #print(f"\tBoard: {str(board_copy.board_to_fen_notation())}")
+                #print(f"Key {key} {key.square.rank} {key.square.file}")
                 piece_copy = board_copy.get_piece(key.san, key.square)
-                print(f"Key copy {piece_copy} {piece_copy.square.rank} {piece_copy.square.file}")
+                #print(f"Key copy {piece_copy} {piece_copy.square.rank} {piece_copy.square.file}")
                 board_copy.place_piece(piece_copy, board_copy.find_square(value[0], value[1]))
                 king_copy = board_copy.get_piece(king.san)
-                print(f"\tKing: {str(king_copy.square)}")
+                #print(f"\tKing: {str(king_copy.square)}")
                 if not board_copy.is_piece_attacked(king_copy.square):
-                    print(f"\tKing not in check if: {str(key)} to {str(value)}")
+                    #print(f"\tKing not in check if: {str(key)} to {str(value)}")
                     if key in moves:
                         moves[key].append(value)
                     else:
                         moves[key] = [value]
-                else:
-                    print(f"\tKing still in check if: {str(key)} to {str(value)}")
+                #else:
+                    #print(f"\tKing still in check if: {str(key)} to {str(value)}")
                 del board_copy
-        #print(f"After \n {str(moves)}")
+        # print(f"After \n {str(moves)}")
         return moves
 
     # Special conditions
@@ -189,7 +189,8 @@ class Board:
         print("TODO")
 
     def update_halfmove_clock(self, piece, capture):
-        # This is the number of halfmoves since the last capture or pawn advance. The reason for this field is that the value is used in the fifty-move rule.
+        # This is the number of halfmoves since the last capture or pawn advance. The reason for this field is that
+        # the value is used in the fifty-move rule.
         if piece.san.lower() == "p" or capture:
             self.halfmove_clock = 0
         else:
@@ -262,8 +263,24 @@ class Board:
         else:
             fen_notation += " b"
         # castling availability
-        # TODO
-        fen_notation += " KQkq"
+        for piece in self.pieces:
+            if piece.san == 'K':
+                castling_king_side_white = piece.castling_king_side
+                castling_queen_side_white = piece.castling_queen_side
+            elif piece.san == 'k':
+                castling_king_side_black = piece.castling_king_side
+                castling_queen_side_black = piece.castling_queen_side
+        if not (castling_king_side_white and castling_queen_side_white and castling_king_side_black and castling_queen_side_black):
+            fen_notation += " -"
+        else:
+            if castling_king_side_white:
+                fen_notation += " K"
+            if castling_queen_side_white:
+                fen_notation += "Q"
+            if castling_king_side_black:
+                fen_notation += "k"
+            if castling_queen_side_black:
+                fen_notation += "q"
         # en passant target square
         # TODO
         fen_notation += " -"
@@ -275,7 +292,7 @@ class Board:
         return fen_notation
 
     def fen_notation_to_board(self, fen_notation):
-        # TODO castling/en passant
+        # TODO en passant
         # KQkq -
         color = True
         file = "a"
@@ -293,10 +310,22 @@ class Board:
                 color = False
             elif c.isupper():
                 color = True
+
+            if color:
+                check_king_side = 'K'
+                check_queen_side = 'Q'
+            else:
+                check_king_side = 'k'
+                check_queen_side = 'q'
+
             if c == Pawn(color).san:
                 self.pieces.append(Pawn(color, self.find_square(file, rank)))
             elif c == Rook(color).san:
-                self.pieces.append(Rook(color, self.find_square(file, rank)))
+                if file == 'a':
+                    not_moved = self.castling_availability(check_queen_side, fen_split[2])
+                else:
+                    not_moved = self.castling_availability(check_king_side, fen_split[2])
+                self.pieces.append(Rook(color, self.find_square(file, rank), not_moved))
             elif c == Knight(color).san:
                 self.pieces.append(Knight(color, self.find_square(file, rank)))
             elif c == Bishop(color).san:
@@ -304,7 +333,10 @@ class Board:
             elif c == Queen(color).san:
                 self.pieces.append(Queen(color, self.find_square(file, rank)))
             elif c == King(color).san:
-                self.pieces.append(King(color, self.find_square(file, rank)))
+                castling_king_side = self.castling_availability(check_king_side, fen_split[2])
+                castling_queen_side = self.castling_availability(check_queen_side, fen_split[2])
+                not_moved = (castling_king_side and castling_queen_side)
+                self.pieces.append(King(color, self.find_square(file, rank), not_moved, castling_king_side, castling_queen_side))
             file = chr(ord(file) + 1)
         self.halfmove_clock = int(fen_split[4])
         self.fullmove_number = int(fen_split[5])
@@ -312,6 +344,12 @@ class Board:
             self.turn = True
         else:
             self.turn = False
+
+    def castling_availability(self, val, fen_castling):
+        if val in fen_castling:
+            return True
+        else:
+            return False
 
     def __str__(self):
         board_text = ""
