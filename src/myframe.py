@@ -54,7 +54,7 @@ class MyFrame(tk.Frame):
                                     tags="piece " + piece.square.file + piece.square.rank)
 
     def refresh(self, turn):
-        #print("refresh")
+        # print("refresh")
         self.canvas.delete("select")
         self.canvas.delete("hold")
         self.canvas.delete("piece")
@@ -97,17 +97,17 @@ class MyFrame(tk.Frame):
             x2 = x1 + self.size
             y2 = y1 + self.size
             self.canvas.create_rectangle(x1, y1, x2, y2, outline="yellow", fill="", tags="select")
-            for key, values in self.board.current_available_moves.items():
-                if key is square.piece:
-                    for value in values:
+            for i in self.board.current_available_moves:
+                for key, value in i.items():
+                    if key is square.piece:
                         col = self.board.convert_file_to_col(value[0])
                         row = self.board.convert_rank_to_row(value[1])
                         x1 = (int(col) * self.size)
                         y1 = (int(row) * self.size)
                         x2 = x1 + self.size
                         y2 = y1 + self.size
-                        square = self.board.find_square(value[0], value[1])
-                        if square.piece is None:
+                        destination_square = self.board.find_square(value[0], value[1])
+                        if destination_square.piece is None:
                             self.canvas.create_rectangle(x1, y1, x2, y2, outline="yellow", fill="green", tags="select")
                         else:
                             self.canvas.create_rectangle(x1, y1, x2, y2, outline="yellow", fill="red", tags="select")
@@ -142,9 +142,9 @@ class MyFrame(tk.Frame):
         rank = self.board.convert_row_to_rank(row)
         square = self.board.find_square(file, rank)
         if self.piece_hold is not None:
-            for key, values in self.board.current_available_moves.items():
-                if key is self.piece_hold:
-                    for value in values:
+            for i in self.board.current_available_moves:
+                for key, value in i.items():
+                    if key is self.piece_hold:
                         if value[0] == file and value[1] == rank:
                             self.board.place_piece(self.piece_hold, square)
                             self.canvas.delete("select")

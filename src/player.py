@@ -8,5 +8,4 @@ class Player:
         self.color = color
 
     def choose_move(self, available_moves):
-        piece, position = random.choice(list(available_moves.items()))
-        return piece, random.choice(position)
+        return random.choice(available_moves)
