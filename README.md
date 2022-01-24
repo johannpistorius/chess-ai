@@ -19,16 +19,12 @@ Chess game coded in Python
 
 ### Castling
 
-**TODO**
-
 - Neither the king nor the rook has previously moved during the game
 - there are no pieces between the king and the rook
 - the king is not in check, and will not pass through or land on any square attacked by an enemy piece
 - (castling is permitted if the rook is under attack)
 
 ### En passant
-
-**TODO**
 
 - When a pawn makes a two-step advance from its starting position and there is an opponent's pawn on a square
 next ot the destination square on an adjacent file, then the opponent's pawn can capture it, moving to the

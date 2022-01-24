@@ -11,7 +11,7 @@ import sys
 
 class Board:
     def __init__(self, configuration, player, opponent, rows=8, columns=8, persistent_obj=None):
-        sys.setrecursionlimit(1000000)
+        sys.setrecursionlimit(10000)
         self.player = player
         self.opponent = opponent
         self.rows = rows
@@ -88,6 +88,23 @@ class Board:
         # update halfmove and fullmove
         self.update_halfmove_clock(piece, new_square.piece)
         self.update_fullmove_number(piece.color)
+        # en passant
+        if str(new_square) == self.en_passant:
+            if self._turn:
+                p = self.get_piece_on_square(str(int(self.en_passant[1]) - 1), self.en_passant[0])
+            else:
+                p = self.get_piece_on_square(str(int(self.en_passant[1]) + 1), self.en_passant[0])
+            self.remove_piece(p)
+        if piece.san.lower() == "p":
+            if abs(int(piece.square.rank) - int(new_square.rank)) > 1:
+                if piece.color:
+                    self.en_passant = piece.square.file + "3"
+                else:
+                    self.en_passant = piece.square.file + "6"
+            else:
+                self.en_passant = ""
+        else:
+            self.en_passant = ""
         # update castling
         if piece.san.lower() == "r":
             if piece.not_moved:
@@ -206,7 +223,24 @@ class Board:
                             or self.is_piece_attacked('d8')):
                         moves.append({king: 'c8', rook_queen_side: 'd8'})
 
-        #print(f"{str(moves)}")
+        # en passant
+        if self.en_passant:
+            file = self.en_passant[0]
+            if self._turn:
+                square_left = self.find_square(chr(ord(file) - 1), '5')
+                if square_left is not None and square_left.piece is not None and square_left.piece.san == 'P':
+                    moves.append({square_left.piece: self.en_passant})
+                square_right = self.find_square(chr(ord(file) + 1), '5')
+                if square_right is not None and square_right.piece is not None and square_right.piece.san == 'P':
+                    moves.append({square_right.piece: self.en_passant})
+            else:
+                square_left = self.find_square(chr(ord(file) - 1), '4')
+                if square_left is not None and square_left.piece is not None and square_left.piece.san == 'p':
+                    moves.append({square_left.piece: self.en_passant})
+                square_right = self.find_square(chr(ord(file) + 1), '4')
+                if square_right is not None and square_right.piece is not None and square_right.piece.san == 'p':
+                    moves.append({square_right.piece: self.en_passant})
+        # print(f"{str(moves)}")
         return moves
 
     # Special conditions
@@ -320,8 +354,10 @@ class Board:
             if castling_queen_side_black:
                 fen_notation += "q"
         # en passant target square
-        # TODO
-        fen_notation += " -"
+        if self.en_passant:
+            fen_notation += " " + self.en_passant
+        else:
+            fen_notation += " -"
         # Halfmove clock
         fen_notation += " " + str(self.halfmove_clock)
         # Fullmove number

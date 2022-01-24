@@ -16,8 +16,6 @@ class Pawn(Piece):
             available_moves.append(i)
         return available_moves
 
-    # TODO separate into different functions
-    # TODO add en passant move
     def check_forward(self, rank, file, squares):
         available_moves = []
         if self.color:
@@ -61,13 +59,6 @@ class Pawn(Piece):
             return True
         else:
             return False
-
-    def en_passant(self):
-        # when a pawn makes a two-step advance from its starting position an there is an opponent's pawn on a square
-        # next ot the destination square on an adjacent file, then the opponent's pawn can capture it, moving to the
-        # square the pawn passed over. This can only be done on the very next turn, otherwise the right to do so is
-        # forfeited
-        print("TODO")
 
     def get_unicode(self):
         if self.color:
