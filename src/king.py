@@ -9,7 +9,14 @@ class King(Piece):
         self.castling_king_side = castling_king_side
         self.castling_queen_side = castling_queen_side
 
-    # TODO add castling ability
+    def set_position(self, square):
+        self.square.piece = None
+        self.square = square
+        self.square.piece = self
+        self.not_moved = False
+        self.castling_king_side = False
+        self.castling_queen_side = False
+
     def available_moves(self, squares):
         available_moves = []
         rank = self.square.rank
@@ -39,13 +46,6 @@ class King(Piece):
         if square is not None and (square.piece is None or square.piece.color is not self.color):
             available_moves.append(str(square))
         return available_moves
-
-    def castling(self):
-        # neither the king nor the rook has previously moved during the game
-        # there are no pieces between the king and the rook
-        # the king is not in check, and will not pass through or land on any square attacked by an enemy piece
-        # (castling is permitted if the rook is under attack)
-        print("TODO")
 
     def get_unicode(self):
         if self.color:

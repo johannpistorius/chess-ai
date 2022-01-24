@@ -18,6 +18,7 @@ class MyFrame(tk.Frame):
         self.turn_data.bind_to(self.refresh)
 
         self.piece_hold = None
+        self.piece_moves = {}
 
         canvas_width = columns * size
         canvas_height = rows * size
@@ -92,6 +93,7 @@ class MyFrame(tk.Frame):
                 (self.board.player.color is self.turn and self.board.player.ishuman or
                  self.board.opponent.color is self.turn and self.board.opponent.ishuman):
             self.piece_hold = self.board.get_piece_on_square(rank, file)
+            self.piece_moves = {}
             x1 = (int(col) * self.size)
             y1 = (int(row) * self.size)
             x2 = x1 + self.size
@@ -107,6 +109,7 @@ class MyFrame(tk.Frame):
                         x2 = x1 + self.size
                         y2 = y1 + self.size
                         destination_square = self.board.find_square(value[0], value[1])
+                        self.piece_moves[str(destination_square)] = i
                         if destination_square.piece is None:
                             self.canvas.create_rectangle(x1, y1, x2, y2, outline="yellow", fill="green", tags="select")
                         else:
@@ -140,13 +143,11 @@ class MyFrame(tk.Frame):
         row = int(event.y / self.size)
         file = self.board.convert_col_to_file(col)
         rank = self.board.convert_row_to_rank(row)
-        square = self.board.find_square(file, rank)
         if self.piece_hold is not None:
-            for i in self.board.current_available_moves:
-                for key, value in i.items():
-                    if key is self.piece_hold:
-                        if value[0] == file and value[1] == rank:
-                            self.board.place_piece(self.piece_hold, square)
-                            self.canvas.delete("select")
-                            self.board.turn = not self.board.turn
+            for k, move in self.piece_moves.items():
+                if k[0] == file and k[1] == rank:
+                    for key, values in move.items():
+                        self.board.place_piece(key, self.board.find_square(values[0], values[1]))
+                        self.canvas.delete("select")
+                    self.board.turn = not self.board.turn
         self.piece_hold = None

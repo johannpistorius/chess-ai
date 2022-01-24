@@ -7,7 +7,12 @@ class Rook(Piece):
         self.standard_algebraic_notation()
         self.not_moved = not_moved
 
-    #TODO add castling ability
+    def set_position(self, square):
+        self.square.piece = None
+        self.square = square
+        self.square.piece = self
+        self.not_moved = False
+
     def available_moves(self, squares):
         available_moves = []
         rank = self.square.rank

@@ -61,7 +61,7 @@ class Board:
             self.current_available_moves = self.all_available_moves_player(player)
         else:
             self.current_available_moves = self.filter_available_moves(self.all_available_moves_player(player))
-        #print(f"Moves {self.current_available_moves}")
+        # print(f"Moves {self.current_available_moves}")
         if self._turn:
             king = self.get_piece('K')
         else:
@@ -85,11 +85,29 @@ class Board:
             self.turn = not self._turn
 
     def place_piece(self, piece, new_square):
+        # update halfmove and fullmove
         self.update_halfmove_clock(piece, new_square.piece)
         self.update_fullmove_number(piece.color)
+        # update castling
+        if piece.san.lower() == "r":
+            if piece.not_moved:
+                if self._turn:
+                    king = self.get_piece('K')
+                    if str(piece.square) == "h1":
+                        king.castling_king_side = False
+                    elif str(piece.square) == "a1":
+                        king.castling_queen_side = False
+                else:
+                    king = self.get_piece('k')
+                    if str(piece.square) == "h8":
+                        king.castling_king_side = False
+                    elif str(piece.square) == "a8":
+                        king.castling_queen_side = False
+        # set piece to new position
         if new_square.piece:
             self.remove_piece(new_square.piece)
         piece.set_position(new_square)
+        # pawn promotion
         if piece.san.lower() == "p":
             if piece.check_promotion():
                 self.promote_pawn(piece)
@@ -102,6 +120,7 @@ class Board:
         for piece in self.pieces:
             if piece.square.rank == rank and piece.square.file == file:
                 return piece
+        return None
 
     def get_piece(self, san, square=None):
         for piece in self.pieces:
@@ -141,7 +160,6 @@ class Board:
         return available_moves
 
     def filter_available_moves(self, available_moves):
-        # print(f"Before \n {str(available_moves)}")
         moves = []
         fen = self.board_to_fen_notation()
         if self._turn:
@@ -151,20 +169,44 @@ class Board:
         for i in available_moves:
             for key, value in i.items():
                 board_copy = Board(fen, self.player, self.opponent, persistent_obj=True)
-                # print(f"\tBoard: {str(board_copy.board_to_fen_notation())}")
-                # print(f"Key {key} {key.square.rank} {key.square.file}")
                 piece_copy = board_copy.get_piece(key.san, key.square)
-                # print(f"Key copy {piece_copy} {piece_copy.square.rank} {piece_copy.square.file}")
                 board_copy.place_piece(piece_copy, board_copy.find_square(value[0], value[1]))
                 king_copy = board_copy.get_piece(king.san)
-                # print(f"\tKing: {str(king_copy.square)}")
                 if not board_copy.is_piece_attacked(king_copy.square):
-                    # print(f"\tKing not in check if: {str(key)} to {str(value)}")
                     moves.append({key: value})
-                # else:
-                # print(f"\tKing still in check if: {str(key)} to {str(value)}")
                 del board_copy
-        # print(f"After \n {str(moves)}")
+
+        # Castling
+        if self._turn:
+            rook_queen_side = self.get_piece_on_square('1', 'a')
+            rook_king_side = self.get_piece_on_square('1', 'h')
+        else:
+            rook_queen_side = self.get_piece_on_square('8', 'a')
+            rook_king_side = self.get_piece_on_square('8', 'h')
+        if king.not_moved and (not self.is_piece_attacked(king.square)) \
+                and str(rook_king_side).lower() == 'r' and str(rook_queen_side).lower() == 'r':
+            if rook_king_side.not_moved and king.castling_king_side:
+                if self._turn:
+                    if not (self.get_piece_on_square('1', 'f') or self.get_piece_on_square('1', 'g')) \
+                            and not (self.is_piece_attacked('f1') or self.is_piece_attacked('g1')):
+                        moves.append({king: 'g1', rook_king_side: 'f1'})
+                else:
+                    if not (self.get_piece_on_square('8', 'f') or self.get_piece_on_square('8', 'g')) \
+                            and not(self.is_piece_attacked('f8') or self.is_piece_attacked('g8')):
+                        moves.append({king: 'g8', rook_king_side: 'f8'})
+            if rook_queen_side.not_moved and king.castling_queen_side:
+                if self._turn:
+                    if not (self.get_piece_on_square('1', 'b') or self.get_piece_on_square('1', 'c') \
+                            or self.get_piece_on_square('1', 'd')) and not (self.is_piece_attacked('c1') \
+                            or self.is_piece_attacked('d1')):
+                        moves.append({king: 'c1', rook_queen_side: 'd1'})
+                else:
+                    if not (self.get_piece_on_square('8', 'b') or self.get_piece_on_square('8', 'c') \
+                            or self.get_piece_on_square('8', 'd')) and not (self.is_piece_attacked('c8') \
+                            or self.is_piece_attacked('d8')):
+                        moves.append({king: 'c8', rook_queen_side: 'd8'})
+
+        #print(f"{str(moves)}")
         return moves
 
     # Special conditions
@@ -265,7 +307,8 @@ class Board:
             elif piece.san == 'k':
                 castling_king_side_black = piece.castling_king_side
                 castling_queen_side_black = piece.castling_queen_side
-        if not (castling_king_side_white and castling_queen_side_white and castling_king_side_black and castling_queen_side_black):
+        if not (castling_king_side_white and castling_queen_side_white \
+                and castling_king_side_black and castling_queen_side_black):
             fen_notation += " -"
         else:
             if castling_king_side_white:
@@ -331,7 +374,8 @@ class Board:
                 castling_king_side = self.castling_availability(check_king_side, fen_split[2])
                 castling_queen_side = self.castling_availability(check_queen_side, fen_split[2])
                 not_moved = (castling_king_side and castling_queen_side)
-                self.pieces.append(King(color, self.find_square(file, rank), not_moved, castling_king_side, castling_queen_side))
+                self.pieces.append(
+                    King(color, self.find_square(file, rank), not_moved, castling_king_side, castling_queen_side))
             file = chr(ord(file) + 1)
         self.halfmove_clock = int(fen_split[4])
         self.fullmove_number = int(fen_split[5])
