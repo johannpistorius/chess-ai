@@ -90,10 +90,12 @@ class Board:
         self.update_fullmove_number(piece.color)
         # en passant
         if str(new_square) == self.en_passant:
+            print(self.en_passant)
             if self._turn:
                 p = self.get_piece_on_square(str(int(self.en_passant[1]) - 1), self.en_passant[0])
             else:
                 p = self.get_piece_on_square(str(int(self.en_passant[1]) + 1), self.en_passant[0])
+            p.square.piece = None
             self.remove_piece(p)
         if piece.san.lower() == "p":
             if abs(int(piece.square.rank) - int(new_square.rank)) > 1:
