@@ -10,15 +10,17 @@ import sys
 
 
 class Board:
-    def __init__(self, configuration, player, opponent, rows=8, columns=8, persistent_obj=None):
+    def __init__(self, configuration, player, opponent, on_game_over=None, rows=8, columns=8, persistent_obj=None):
         sys.setrecursionlimit(10000)
         self.player = player
         self.opponent = opponent
+        self.on_game_over = on_game_over  # Store callback function
         self.rows = rows
         self.columns = columns
         self.squares = []
         self.pieces = []
         self.pieces_captured = []
+        self.is_game_over = False
 
         self._turn = None
         self.turn_observers = []
@@ -55,7 +57,6 @@ class Board:
         self.fen_notation_to_board(configuration)
 
     def play(self, player):
-        # TODO Random AI (not very smort)
         # print(f"Initializing {(self.fullmove_number == 1)}")
         if self.fullmove_number == 1:
             self.current_available_moves = self.all_available_moves_player(player)
@@ -68,21 +69,27 @@ class Board:
             king = self.get_piece('k')
         if self.halfmove_clock >= 50 or \
                 (not self.current_available_moves and not self.is_piece_attacked(king.square)):
-            print(self.board_to_fen_notation())
-            print(str(self))
-            sys.exit("Draw!")
+            #print(self.board_to_fen_notation())
+            #print(str(self))
+            self.is_game_over = True
+            self.on_game_over(self, "Draw!")
         if not self.current_available_moves:
-            print(self.board_to_fen_notation())
-            print(str(self))
+            #print(self.board_to_fen_notation())
+            #print(str(self))
             if self._turn:
-                sys.exit("Black won!")
+                self.is_game_over = True
+                self.on_game_over(self, "Black won!")
             else:
-                sys.exit("White won!")
-        if player.color is self._turn and not player.ishuman:
-            move = player.choose_move(self.current_available_moves)
+                self.is_game_over = True
+                self.on_game_over(self, "White won!")
+        if player.color is self._turn and not player.ishuman and not self.is_game_over:
+            move = player.choose_move(self.current_available_moves, self)
             for key, value in move.items():
                 self.place_piece(key, self.find_square(value[0], value[1]))
             self.turn = not self._turn
+    
+    def is_game_over(self):
+        return self.is_game_over
 
     def place_piece(self, piece, new_square):
         # update halfmove and fullmove
@@ -90,7 +97,6 @@ class Board:
         self.update_fullmove_number(piece.color)
         # en passant
         if str(new_square) == self.en_passant:
-            print(self.en_passant)
             if self._turn:
                 p = self.get_piece_on_square(str(int(self.en_passant[1]) - 1), self.en_passant[0])
             else:
